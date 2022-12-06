@@ -1,0 +1,49 @@
+---
+title: "HMA_Project"
+output: html_document
+date: "2022-09-29"
+---
+
+```{r}
+library(quantmod)
+aapl_data = getSymbols("AAPL", auto.assign=FALSE, return.class='xts')   #Apple
+nkla_data = getSymbols("NKLA", auto.assign=FALSE, return.class='xts')   #Nikola
+f_data = getSymbols("F", auto.assign=FALSE, return.class='xts')   #Ford
+bac_data = getSymbols("BAC", auto.assign=FALSE, return.class='xts')   #Bank of America
+uber_data = getSymbols("UBER", auto.assign=FALSE, return.class='xts')   #Uber
+
+weighted_moving_average = function(stock_data, n) {
+  if ('wma' %in% names(stock_data)) {
+    close_data = stock_data$wma
+  }
+  else {
+    close_data = Cl(stock_data)
+  }
+  names(close_data) = "Close"
+  decrement = n - 1
+  close_data$wma = close_data$Close * n
+  sum_of_weights = n
+  for (i in 1:(n - 1)) {
+    close_data$wma = close_data$wma + lag(close_data$Close, i) * decrement
+    sum_of_weights = sum_of_weights + decrement
+    decrement = decrement - 1
+  }
+  close_data$wma = close_data$wma / sum_of_weights
+  return(close_data$wma)
+}
+
+hull_moving_average = function(stock_data, n) {
+  if (n <= 2) {
+    print("n must be an integer greater than or equal to 3, so n was set to 3")
+    n = 3
+  }
+  stock_data$hma = weighted_moving_average(2 * weighted_moving_average(stock_data, n / 2) - weighted_moving_average(stock_data, n), sqrt(n))
+  return(stock_data$hma)
+}
+
+plot(hull_moving_average(aapl_data, 5)["2022"])
+plot(hull_moving_average(nkla_data, 5)["2022"])
+plot(hull_moving_average(f_data, 10)["2022"])
+plot(hull_moving_average(bac_data, 3)["2022"])
+plot(hull_moving_average(uber_data, 8)["2022"])
+```
